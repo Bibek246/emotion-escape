@@ -137,3 +137,38 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+# --- Emotion Escape extras ---
+# Local game cache and debug files
+*.log
+.DS_Store
+.vscode/
+.idea/
+.env
+.env.local
+
+# Build outputs
+/dist/
+/build/
+/out/
+/coverage/
+/tmp/
+/.cache/
+
+# Asset processing outputs
+assets/generated/
+assets/spritesheets/
+*.mp3
+*.wav
+*.mp4
+*.webm
+
+# Service worker cache (if you build PWA)
+sw.js.map
+
+# Avoid committing large test videos or model files
+*.onnx
+*.tflite
+*.bin
+*.ckpt
+*.h5
+
