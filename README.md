@@ -5,6 +5,7 @@ Emotion Escape is a fast, lightweight runner game that adapts to your mood in re
 Live demo: https://bibek246.github.io/emotion-escape/
 
 
+
 ✨ Features
 
 On-device Mood AI (privacy-first): blends smile / jaw / brow with neutral calibration + smoothing → stable happy / calm / stressed states.
@@ -103,31 +104,6 @@ Your game appears at:
 
 https://<you>.github.io/<repo>/
 
-
-Verify the model serves:
-https://<you>.github.io/<repo>/models/face_landmarker.task (should download).
-
-Netlify / Vercel
-
-Drag-and-drop the folder (Netlify) or run vercel in the repo.
-
-No build step; publish directory = project root.
-
-Ensure HTTPS (enabled by default) so the webcam works.
-
-🗂️ Project Structure
-.
-├─ index.html                  # UI & module imports
-├─ styles.css                  # right panel UI + layout
-├─ manifest.webmanifest        # PWA manifest
-├─ icons/                      # app icons (favicon/PWA)
-├─ models/
-│  └─ face_landmarker.task     # MediaPipe model (binary)
-└─ src/
-   ├─ main.js                  # game loop, renderers, skins, mood worlds
-   ├─ mood.js                  # mood state + manual overrides
-   ├─ mood-mediapipe.v3.js     # MediaPipe loader (blendshapes + calibration)
-   └─ audio.js                 # sfx/music (opt-in)
 
 ⚙️ Configuration
 
