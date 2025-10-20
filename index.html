@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Emotion Escape</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="icons/icon-192.png">
+</head>
+<body>
+  <div id="wrap">
+    <div id="left">
+      <canvas id="canvas" width="1024" height="576"></canvas>
+      <div id="overlay">
+        <div class="title">Emotion Escape</div>
+        <div class="subtitle">On-device mood adaptive runner</div>
+        <div class="row">
+          <button id="startBtn">Start</button>
+          <button id="pauseBtn">Pause</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        <div class="hint">
+          Move: <b>WASD / Arrow keys</b> • Jump: <b>Space</b> (Double Jump) • Mood: <b>1=Happy, 2=Calm, 3=Stressed</b>
+        </div>
+      </div>
+    </div>
+
+    <div id="right">
+      <section>
+        <div class="tag">Status</div>
+        <div class="pills">
+          <span class="pill">Double Jump</span>
+          <span class="pill">Coyote Time</span>
+          <span class="pill">Jump Buffer</span>
+          <span class="pill">Parallax</span>
+          <span class="pill">Particles</span>
+        </div>
+      </section>
+
+      <section>
+        <div class="tag">Score</div>
+        <div class="metric"><span id="score">0</span> <small>pts</small></div>
+        <div class="tag">High Score</div>
+        <div class="metric"><span id="hiscore">0</span> <small>pts</small></div>
+      </section>
+
+      <section>
+        <div class="tag">Current Mood</div>
+        <div id="mood" class="metric mood">calm</div>
+      </section>
+
+      <!-- Character selector + randomize -->
+      <section>
+        <div class="tag">Character</div>
+        <div class="row" style="gap:.5rem; align-items:center;">
+          <select id="skinSelect">
+            <option value="robot">🤖 Robot</option>
+            <option value="ninja">🥷 Ninja</option>
+            <option value="cat">🐱 Cat</option>
+            <option value="astronaut">👩‍🚀 Astronaut</option>
+            <option value="slime">🫧 Slime</option>
+            <option value="wizard">🧙 Wizard</option>
+          </select>
+          <label class="toggle" title="Pick a random skin when you press Start">
+            <input id="randSkinToggle" type="checkbox" />
+            <span>Randomize on Start</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <div class="tag">Webcam (optional)</div>
+        <video id="cam" playsinline autoplay muted></video>
+        <div class="hint">
+          Grant camera permission to enable on-device mood detection (you can also use 1/2/3).
+          After enabling Mood AI, hold a neutral face for ~1–2s for calibration.
+        </div>
+      </section>
+
+      <section>
+        <div class="tag">Audio & AI</div>
+        <div class="row">
+          <button id="audioBtn">Enable Audio</button>
+          <label class="toggle">
+            <input id="musicToggle" type="checkbox" />
+            <span>Background music</span>
+          </label>
+          <button id="moodAIBtn">Enable Mood AI</button>
+          <button id="recalBtn">Recalibrate Neutral</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      startGame, pauseGame, resetGame, initGame,
+      setAudioEnabled, setMusicEnabled, setSkin, setRandomizeSkin
+    } from './src/main.js';
+    import { initMoodControls } from './src/mood.js';
+    import { enableMoodAI, recalibrateNeutral } from './src/mood-mediapipe.v3.js';
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const audioBtn = document.getElementById('audioBtn');
+    const musicToggle = document.getElementById('musicToggle');
+    const moodAIBtn = document.getElementById('moodAIBtn');
+    const recalBtn = document.getElementById('recalBtn');
+    const skinSelect = document.getElementById('skinSelect');
+    const randSkinToggle = document.getElementById('randSkinToggle');
+
+    // Service worker: disabled on localhost
+    if ('serviceWorker' in navigator && !location.hostname.includes('localhost')) {
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    }
+
+    // Camera preview
+    const cam = document.getElementById('cam');
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        cam.srcObject = stream;
+      } catch {}
+    })();
+
+    initGame();
+    initMoodControls();
+
+    // Skin init
+    const savedSkin = localStorage.getItem('ee_skin') || 'robot';
+    skinSelect.value = savedSkin;
+    setSkin(savedSkin);
+
+    const savedRand = localStorage.getItem('ee_rand_skin') === '1';
+    randSkinToggle.checked = savedRand;
+    setRandomizeSkin(savedRand);
+
+    skinSelect.onchange = (e) => {
+      const val = e.target.value;
+      setSkin(val);
+      localStorage.setItem('ee_skin', val);
+    };
+    randSkinToggle.onchange = (e) => {
+      const v = !!e.target.checked;
+      setRandomizeSkin(v);
+      localStorage.setItem('ee_rand_skin', v ? '1':'0');
+    };
+
+    startBtn.onclick = () => startGame();
+    pauseBtn.onclick = () => pauseGame();
+    resetBtn.onclick = () => resetGame();
+
+    audioBtn.onclick = async () => {
+      await setAudioEnabled(true);
+      audioBtn.textContent = 'Audio Enabled';
+      audioBtn.disabled = true;
+    };
+    musicToggle.onchange = (e) => setMusicEnabled(e.target.checked);
+
+    moodAIBtn.onclick = async () => {
+      moodAIBtn.textContent = 'Enabling...';
+      const ok = await enableMoodAI(cam);
+      moodAIBtn.textContent = ok ? 'Mood AI Enabled' : 'Enable Mood AI';
+      moodAIBtn.disabled = ok;
+    };
+    recalBtn.onclick = () => recalibrateNeutral();
+  </script>
+</body>
+</html>

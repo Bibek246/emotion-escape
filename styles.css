@@ -1,0 +1,39 @@
+:root {
+  --bg: #0e0f13;
+  --card: #161823;
+  --ink: #e9ecf1;
+  --muted: #a8b0c2;
+  --pill: #23263a;
+  --accent: #7bdcff;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+#wrap { display:grid; grid-template-columns: 2fr 1fr; gap:14px; padding:14px; height:100%; }
+
+#left { position:relative; background: radial-gradient(1200px 700px at 60% -100px, #22335a 10%, transparent 55%), linear-gradient(180deg, #111525, #0b0c12); border-radius:16px; overflow:hidden; }
+#canvas { display:block; width:100%; height:100%; object-fit:contain; }
+
+#overlay { position:absolute; left:14px; bottom:14px; right:14px; background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.35)); border-radius:12px; padding:12px; }
+.title { font-weight:800; font-size:26px; letter-spacing:.4px; }
+.subtitle { color:var(--muted); margin-bottom:8px; }
+.row { display:flex; gap:8px; flex-wrap:wrap; }
+button { border:0; padding:10px 14px; border-radius:10px; background:var(--pill); color:var(--ink); cursor:pointer; }
+button:hover { filter:brightness(1.1); }
+.hint { color:var(--muted); font-size:12px; margin-top:6px; }
+
+#right { background:var(--card); border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:14px; overflow:auto; }
+section { background:#151726; border:1px solid #1f2335; border-radius:12px; padding:12px; }
+.tag { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin-bottom:6px; }
+.pills { display:flex; gap:6px; flex-wrap:wrap; }
+.pill { background:var(--pill); padding:6px 10px; border-radius:999px; font-size:12px; }
+.metric { font-size:28px; font-weight:700; }
+.metric small { font-size:12px; color:var(--muted); margin-left:6px; }
+.mood { color:var(--accent); }
+
+video { width:100%; border-radius:8px; background:#000; }
+.toggle { display:flex; align-items:center; gap:8px; }
+
+@media (max-width: 980px) {
+  #wrap { grid-template-columns: 1fr; }
+  #right { order: -1; }
+}
