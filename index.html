@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <title>Emotion Escape</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="icon" href="icons/icon-192.png">
@@ -11,7 +11,20 @@
 <body>
   <div id="wrap">
     <div id="left">
-      <canvas id="canvas" width="1024" height="576"></canvas>
+      <div class="canvas-wrap">
+        <canvas id="canvas" width="1024" height="576"></canvas>
+
+        <!-- Mobile controls -->
+        <div id="mobileControls" class="mobile-controls" aria-hidden="true">
+          <button id="btnLeft"  class="mc-btn" aria-label="Move left">⟵</button>
+          <button id="btnJump"  class="mc-btn mc-jump" aria-label="Jump">⤴</button>
+          <button id="btnRight" class="mc-btn" aria-label="Move right">⟶</button>
+        </div>
+
+        <!-- Show menu again when hidden on mobile -->
+        <button id="menuBtn" class="menu-fab" title="Show menu">☰</button>
+      </div>
+
       <div id="overlay">
         <div class="title">Emotion Escape</div>
         <div class="subtitle">On-device mood adaptive runner</div>
@@ -21,7 +34,8 @@
           <button id="resetBtn">Reset</button>
         </div>
         <div class="hint">
-          Move: <b>WASD / Arrow keys</b> • Jump: <b>Space</b> (Double Jump) • Mood: <b>1=Happy, 2=Calm, 3=Stressed</b>
+          Move: <b>WASD / Arrow keys</b> • Jump: <b>Space</b> (Double Jump) • Mood: <b>1=Happy, 2=Calm, 3=Stressed</b> •
+          <span class="only-touch">Touch: ⟵ ⤴ ⟶ (swipe up to jump)</span>
         </div>
       </div>
     </div>
@@ -50,7 +64,6 @@
         <div id="mood" class="metric mood">calm</div>
       </section>
 
-      <!-- Character selector + randomize -->
       <section>
         <div class="tag">Character</div>
         <div class="row" style="gap:.5rem; align-items:center;">
@@ -96,7 +109,8 @@
   <script type="module">
     import {
       startGame, pauseGame, resetGame, initGame,
-      setAudioEnabled, setMusicEnabled, setSkin, setRandomizeSkin
+      setAudioEnabled, setMusicEnabled, setSkin, setRandomizeSkin,
+      setMobileInputHandlers, requestCanvasResize
     } from './src/main.js';
     import { initMoodControls } from './src/mood.js';
     import { enableMoodAI, recalibrateNeutral } from './src/mood-mediapipe.v3.js';
@@ -111,16 +125,26 @@
     const skinSelect = document.getElementById('skinSelect');
     const randSkinToggle = document.getElementById('randSkinToggle');
 
-    // Service worker: disabled on localhost
+    const btnLeft  = document.getElementById('btnLeft');
+    const btnRight = document.getElementById('btnRight');
+    const btnJump  = document.getElementById('btnJump');
+    const menuBtn  = document.getElementById('menuBtn');
+
+    const MOBILE_BP = 980;
+
+    // Service worker disabled on localhost to avoid cache pain
     if ('serviceWorker' in navigator && !location.hostname.includes('localhost')) {
       navigator.serviceWorker.register('./sw.js').catch(()=>{});
     }
 
-    // Camera preview
+    // Camera preview (for MediaPipe)
     const cam = document.getElementById('cam');
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: {ideal: 320}, height: {ideal: 240}, facingMode: 'user' },
+          audio: false
+        });
         cam.srcObject = stream;
       } catch {}
     })();
@@ -128,10 +152,13 @@
     initGame();
     initMoodControls();
 
-    // Skin init
-    const savedSkin = localStorage.getItem('ee_skin') || 'robot';
-    skinSelect.value = savedSkin;
-    setSkin(savedSkin);
+    // Skin init + persistence
+    const validSkins = ['robot','ninja','cat','astronaut','slime','wizard'];
+    const saved = localStorage.getItem('ee_skin');
+    const initialSkin = validSkins.includes(saved) ? saved : 'robot';
+    skinSelect.value = initialSkin;
+    setSkin(initialSkin);
+    if (saved !== initialSkin) localStorage.setItem('ee_skin', initialSkin);
 
     const savedRand = localStorage.getItem('ee_rand_skin') === '1';
     randSkinToggle.checked = savedRand;
@@ -166,6 +193,38 @@
       moodAIBtn.disabled = ok;
     };
     recalBtn.onclick = () => recalibrateNeutral();
+
+    // Hook up mobile inputs
+    setMobileInputHandlers({
+      leftEl: btnLeft, rightEl: btnRight, jumpEl: btnJump, canvasEl: document.getElementById('canvas')
+    });
+
+    // ---------- Mobile: hide/show menu while playing ----------
+    function setMobilePlayingUI(playing){
+      const should = (window.innerWidth <= MOBILE_BP) && playing;
+      document.body.classList.toggle('playing-mobile', should);
+      // Recompute canvas fit after layout change
+      requestCanvasResize();
+    }
+
+    // Listen to state events from main.js
+    window.addEventListener('ee:state', (e)=>{
+      const { playing, paused } = e.detail;
+      setMobilePlayingUI(playing && !paused);
+    });
+
+    // Menu button (visible only while playing-mobile)
+    menuBtn.onclick = () => {
+      document.body.classList.remove('playing-mobile');
+      requestCanvasResize();
+    };
+
+    // If user rotates/resizes, ensure layout is correct
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > MOBILE_BP) document.body.classList.remove('playing-mobile');
+      requestCanvasResize();
+    }, {passive:true});
+    window.addEventListener('orientationchange', () => requestCanvasResize(), {passive:true});
   </script>
 </body>
 </html>
